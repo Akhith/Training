@@ -1,13 +1,12 @@
 import sys
 from geopy.geocoders import Nominatim
-def address(long,lat):
-	geocoder = Nominatim()
-	location = geolocator.reverse(long,lat)
+def address(longitude,latitude):
+	geocoder = Nominatim(user_agent = "my-applications")
+	location = geocoder.reverse((longitude,latitude))
 	print(location.address)
 def main():
-	long=sys.argv[1]
-	lat=sys.argv[2]
-	address(long,lat)
+	longitude=sys.argv[1]
+	latitude=sys.argv[2]
+	address(longitude,latitude)
 if __name__=="__main__":
 	main()
-
