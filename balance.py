@@ -1,4 +1,32 @@
+"""
+A four-digit year as input and generate the balances file and 
+transactions file for that year.
+The input is get from user by passed argument parser  such as -y /--year  both are accepted
 
+There are mainy three functions used :-
+1. workdays(year) - it generate working days of particular year
+   -The output of the function is a days[] list. The elements in the list is in YYYYMMDD format.
+   -The function called by inside the transaction(year), balance(year) function
+2. transaction(year) - it generate transaction.csv file
+   - First it fetch the days[] list from workdays() function
+   - create new_days[] list which include only 150 days from days[] list by using randomized selection.
+   - create a transaction.csv file using open() function.
+   - write the header from the list fieldnames = ['Date', 'currency', 'Amount', 'Description', 'Ref#']
+   - open a while loop for limit 250 transaction  into transaction.csv file
+   - write each raw in the dict format by randomized choosen values
+2. balance(year) - it generate balance.csv file
+   - First read the transaction.csv file for getting all the transactions 
+   - write each row wise data into row[] list
+   - create a new_sorted[] list from row[] which is a sorted list by the fieldname Date 
+   - call the workday(year) function get the days[] list
+   - create a balance.csv file using open() function
+   - write the header from the list fieldnames = ['Date', 'Account', 'Opening', 'Closing', 'Ref#']
+   - fetch each day in days[] list
+   - write each raw in the dict format by randomized choosen values
+   - calculating the opening and closing value by amount which fetch from new_sorted[] list
+
+
+"""
 import sys
 import csv
 import random,uuid
@@ -35,17 +63,14 @@ def transaction(year):
     new_days.append(random.choice(days))
     num -= 1
 
-  print(len(new_days))
-
+  
   with open('transaction.csv', mode='w') as csv_file:
     fieldnames = ['Date', 'currency', 'Amount', 'Description', 'Ref#']
     writer = csv.DictWriter(csv_file, fieldnames=fieldnames)
     n=250
     writer.writeheader()
+    
     while (n != 0):
-      # date = random.choice(days)
-      # str1 = str(date)
-      # new_date = str1.replace('-','')
       writer.writerow({'Date': random.choice(new_days), 'currency': 'INR', 'Amount': round(random.uniform(-100,100),2), 'Description': 'wire out invoice ', 'Ref#':uuid.uuid4().hex[:8]})
       n-=1
       
@@ -58,7 +83,7 @@ def balance(year):
   rows = []
   for row in csvreader:
       rows.append(row)
-  new_sorted=sorted(rows,key=lambda x:x[0])
+  date_sorted=sorted(rows,key=lambda x:x[0])
 
   days = workdays(year)
   accounts = ['current','savings','salary','fixed deposite','NRI']
@@ -66,17 +91,20 @@ def balance(year):
   with open('balance.csv', mode='w') as csv_file:
     fieldnames = ['Date', 'Account', 'Opening', 'Closing', 'Ref#']
     writer = csv.DictWriter(csv_file, fieldnames=fieldnames)
-    n=len(days)
     writer.writeheader()
     opening_amout=0
     closing_amount=0
-    for i in days:
-      for j in new_sorted:
-        
-        if i in j[0]:
-          closing_amount = round(float(opening_amout)+float(j[2]),2)
-      writer.writerow({'Date': i, 'Account': random.choice(accounts), 'Opening':opening_amout , 'Closing':closing_amount , 'Ref#': uuid.uuid4().hex[:8]})
+    for day in days:
+      total=0
+      for row in date_sorted:
+        if day == row[0]:
+          total = float(row[2]) +float(total)
+      closing_amount = round(total+float(opening_amout),2)
+
+      writer.writerow({'Date': day, 'Account': random.choice(accounts), 'Opening':opening_amout , 'Closing':closing_amount , 'Ref#': uuid.uuid4().hex[:8]})
       opening_amout = closing_amount
+
+
 
 parser = argparse.ArgumentParser()
 parser.add_argument("-y", "--year", type=int, help="Details of the specified year")
