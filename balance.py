@@ -6,53 +6,63 @@ import sys
 import csv
 import random,uuid
 import argparse
-from datetime import date, timedelta
-
-""""
-1. workdays(year) - it generate working days of particular year
-   -The output of the function is a days[] list. The elements in the list is in YYYYMMDD format.
-   -The function called by inside the transaction(year), balance(year) function
-
-"""
+from datetime import date, datetime, timedelta
 
 
 def workdays(year):
-
+  """"
+   - for given year it generate all the workdays
+   - input : year 
+   - output : days[] list only include the weekday
+  """
   days = []
-  sdate = date(int(year), 1, 2)   
+  sdate = date(int(year), 1, 2)           # Not include jan 1st, Dec 31st
   edate = date(int(year), 12, 30)   
 
   delta = edate - sdate       
 
   for i in range(delta.days + 1):
     day = sdate + timedelta(days=i)
-    if day.isoweekday() not in (6,7):
-      new = str(day).replace('-','')
+    if day.isoweekday() not in (6,7):     # Not include the saturday,sunday in day[]
+      new = str(day).replace('-','')      #  Day are in YYYYMMDD format
       days.append(new)
 
   return days
 
-"""
-2. transaction(year) - it generate transaction.csv file
-   - First it fetch the days[] list from workdays() function
-   - create new_days[] list which include only 150 days from days[] list by using randomized selection.
-   - create a transaction.csv file using open() function.
-   - write the header from the list fieldnames = ['Date', 'currency', 'Amount', 'Description', 'Ref#']
-   - open a while loop for limit 250 transaction  into transaction.csv file
-   - write each raw in the dict format by randomized choosen values
 
-"""
-## transaction file generation
+def newtransaction(days):
+    """"
+   - for given day[] list it randomly choose 150 days
+   - input : days[] list - weekdays of year
+   - output : new_list [] - 150 days from day[] list ,there is more than one transaction on atleast 30 week days
+    """
+    new_list = random.choices(days, k=150)
+    new_list = sorted(new_list)
+    day=1
+    start = datetime.strptime(new_list[0], "%Y%m%d")
+    while ( day < len(new_list)):
+        end =   datetime.strptime(new_list[day], "%Y%m%d")
+        diff = end-start        
+        if diff.days >= 30:
+             newtransaction(days)
+        else: 
+            start = end   
+        day += 1
+          
+    return new_list
+       
+ 
+
 def transaction(year):
+  """
+   - For a particular year it generate transaction.csv file
+   - input : year
+   - output : generate transaction.csv file, Fieldname : "Date,Currency,Amount,Description,Ref #"
 
+  """
   days = workdays(year)
-  new_days = []
-  num = 150
-  while  ( num !=0):
-    new_days.append(random.choice(days))
-    num -= 1
-
   
+  new_days = newtransaction(days)
   with open('transaction.csv', mode='w') as csv_file:
     fieldnames = ['Date', 'currency', 'Amount', 'Description', 'Ref#']
     writer = csv.DictWriter(csv_file, fieldnames=fieldnames)
@@ -65,20 +75,15 @@ def transaction(year):
     for day in sorted(transaction_days):
       writer.writerow({'Date': day, 'currency': 'INR', 'Amount': round(random.uniform(-100,100),2), 'Description': 'wire out invoice ', 'Ref#':uuid.uuid4().hex[:8]})
       
-## balance file generation
-"""
-2. balance(year) - it generate balance.csv file
-   - First read the transaction.csv file for getting all the transactions 
-   - write each row wise data into row[] list
-   - create a new_sorted[] list from row[] which is a sorted list by the fieldname Date 
-   - call the workday(year) function get the days[] list
-   - create a balance.csv file using open() function
-   - write the header from the list fieldnames = ['Date', 'Account', 'Opening', 'Closing', 'Ref#']
-   - fetch each day in days[] list
-   - write each raw in the dict format by randomized choosen values
-   - calculating the opening and closing value by amount which fetch from new_sorted[] list
-"""
+
 def balance(year):
+  
+  """
+   - for a particular year it generate balance.csv file
+   - input : year
+   - output : generate balance.csv file, Fieldname : "Date,Account,Opening,Closing,Ref #"
+
+  """
   new_sorted = []
   file = open("transaction.csv")
   csvreader = csv.reader(file)
@@ -104,7 +109,6 @@ def balance(year):
 
       writer.writerow({'Date': day, 'Account': random.choice(accounts), 'Opening':opening_amout , 'Closing':closing_amount , 'Ref#': uuid.uuid4().hex[:8]})
       opening_amout = closing_amount
-
 
 
 parser = argparse.ArgumentParser()
